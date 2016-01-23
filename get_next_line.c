@@ -31,6 +31,7 @@ int			ft_put_buffer_in_line(char **stat, char **line, char *buffer, int i)
 		*line = ft_strsub(buffer, 0, i);
 	}
 	tmp = ft_strsub(buffer, i + 1, BUFF_SIZE - i);
+	free(*stat);
 	*stat = NULL;
 	if (!(*stat = ft_strnew(ft_strlen(tmp) + 1)))
 		return (-1);
@@ -45,6 +46,7 @@ int			ft_put_in_line(int i, char **stat, char **line)
 	tmp = NULL;
 	*line = ft_strsub(*stat, 0, i);
 	tmp = ft_strsub(*stat, i + 1, (ft_strlen(*stat) - i));
+	free(*stat);
 	*stat = NULL;
 	if (!(*stat = ft_strnew(ft_strlen(tmp) + 1)))
 		return (-1);
@@ -52,43 +54,42 @@ int			ft_put_in_line(int i, char **stat, char **line)
 	return (1);
 }
 
-char		*ft_put_in_stat(char **stat, char **buffer, int i, char **line)
+char		*ft_put_in_stat(char **s, char **buffer, int i, char **line)
 {
-	char	*tmp;
+	char	*tp;
 
-	tmp = NULL;
+	tp = NULL;
 	if (i == -2)
 	{
 		if (!(*line = ft_strnew(BUFF_SIZE + 1)))
 			return (NULL);
-		if (*stat)
-			*line = ft_strcpy(*line, *stat);
+		if (*s)
+			*line = ft_strcpy(*line, *s);
 		*line = ft_strcat(*line, *buffer);
 		if (**buffer == '\0' && !**line)
 			return (NULL);
-		*stat = NULL;
-		free(*stat);
+		free(*s);
+		*s = NULL;
 		return (*line);
 	}
-	if (!(tmp = ft_strnew(ft_strlen(*buffer) + 1)))
+	if (!(tp = ft_strnew(ft_strlen(*buffer) + 1)))
 		return (NULL);
-	ft_strcpy(tmp, *buffer);
+	ft_strcpy(tp, *buffer);
 	free(*buffer);
 	if (!(*buffer = ft_strnew(BUFF_SIZE + 1)))
 		return (NULL);
-	if (*stat == NULL)
-		return (ft_strsub(tmp, 0, BUFF_SIZE));
-	else if (*stat != NULL)
-		return (ft_strjoin(*stat, tmp));
-	return (0);
+	if (*s == NULL || *s != NULL)
+		return (*s == NULL ? ft_strsub(tp, 0, BUFF_SIZE) : ft_strjoin(*s, tp));
+	return (NULL);
 }
 
-int			ft_count_n(char *buffer)
+int			f_count_n(char *buffer)
 {
 	int		i;
 	int		len;
 
 	i = 0;
+	len = 0;
 	if (buffer == NULL)
 		return (-1);
 	len = ft_strlen(buffer);
@@ -104,28 +105,28 @@ int			ft_count_n(char *buffer)
 int			get_next_line(int fd, char **line)
 {
 	static char		*stat = NULL;
-	char			*buffer;
+	char			*buf;
 	int				i;
 
-	buffer = NULL;
+	buf = NULL;
 	i = 0;
 	if (fd < 0 || !line || BUFF_SIZE <= 0)
 		return (-1);
-	if ((i = ft_count_n(stat)) >= 0)
+	if ((i = f_count_n(stat)) >= 0)
 		return (ft_put_in_line(i, &stat, line));
 	else
 	{
-		if (!(buffer = ft_strnew(BUFF_SIZE + 1)))
+		if (!(buf = ft_strnew(BUFF_SIZE + 1)))
 			return (-1);
-		while ((i = read(fd, buffer, BUFF_SIZE)) >= 0)
+		while ((i = read(fd, buf, BUFF_SIZE)) >= 0)
 		{
-			if ((buffer[i + 1] == '\0') && (ft_count_n(buffer) == -1) && i < BUFF_SIZE)
-				return (ft_put_in_stat(&stat, &buffer, -2, line) ? 1 : 0);
-			if ((i = ft_count_n(buffer)) >= 0)
-				return (ft_put_buffer_in_line(&stat, line, buffer, i));
+			if ((buf[i + 1] == '\0') && (f_count_n(buf) == -1) && i < BUFF_SIZE)
+				return (ft_put_in_stat(&stat, &buf, -2, line) ? 1 : 0);
+			if ((i = f_count_n(buf)) >= 0)
+				return (ft_put_buffer_in_line(&stat, line, buf, i));
 			else
-				stat = ft_put_in_stat(&stat, &buffer, 0, line);
+				stat = ft_put_in_stat(&stat, &buf, 0, line);
 		}
 	}
-	return (0);
+	return ((i < 0) ? -1 : 0);
 }
